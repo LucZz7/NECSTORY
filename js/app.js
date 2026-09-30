@@ -1,12 +1,16 @@
 /* ============================================================
-   NECSTORY — application logic
+   NECSTORY — application logic (multi-page)
+   Pages: home (index.html), stories (stories.html), about (about.html).
+   The story reader is fully IN-APP: full text is fetched from the
+   source API into the modal. No external redirects for reading.
    Live sources: Wikipedia API (hi/en), Creepypasta Fandom API,
-   Project Gutenberg links, bundled GitHub datasets.
+   bundled GitHub datasets.
    ============================================================ */
 'use strict';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const PAGE = (document.body && document.body.dataset.page) || 'home';
 
 /* ---------------- API helpers ---------------- */
 async function apiGet(base, params) {
@@ -45,14 +49,13 @@ async function wikiSearch(q, lang, n) {
 }
 async function wikiExtract(title, lang, chars) {
   const d = await apiGet(NEC_CONFIG.wikipedia(lang),
-    { action: 'query', prop: 'extracts', exintro: 0, explaintext: 1, exchars: chars || 5000, titles: title });
+    { action: 'query', prop: 'extracts', exintro: 0, explaintext: 1, exchars: chars || 2500, titles: title });
   const pages = d.query.pages;
   const p = pages[Object.keys(pages)[0]];
   if (!p || p.missing || !p.extract || p.extract.length < 200) return null;
   if (/^List of /.test(p.title)) return null;
   return {
-    title: p.title, text: p.extract,
-    url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title.replace(/ /g, '_'))}`,
+    title: p.title, text: p.extract, kind: 'wiki', lang,
     src: lang === 'hi' ? 'Wikipedia Hindi' : 'Wikipedia EN',
     year: extractYear(p.extract),
   };
@@ -65,13 +68,9 @@ async function fandomList(cat, n) {
 async function fandomStory(title, chars) {
   const d = await apiGet(NEC_CONFIG.fandom, { action: 'parse', page: title, prop: 'wikitext' });
   if (d.error) return null;
-  const text = cleanWiki(d.parse.wikitext['*']).slice(0, chars || 6000);
+  const text = cleanWiki(d.parse.wikitext['*']).slice(0, chars || 2500);
   if (text.length < 200) return null;
-  return {
-    title, text,
-    url: 'https://creepypasta.fandom.com/wiki/' + encodeURIComponent(title.replace(/ /g, '_')),
-    src: 'Creepypasta Wiki', year: null,
-  };
+  return { title, text, kind: 'fandom', src: 'Creepypasta Wiki', year: null };
 }
 async function hydrate(item) {
   try {
@@ -79,6 +78,20 @@ async function hydrate(item) {
     if (item.kind === 'fandom') return await fandomStory(item.title);
   } catch (e) { return null; }
   return null;
+}
+
+/* Full text, fetched lazily when the reader opens — stays in-app. */
+async function fetchFullText(item) {
+  try {
+    if (item.kind === 'wiki') {
+      const f = await wikiExtract(item.title, item.lang, 30000);
+      if (f && f.text) return f.text;
+    } else if (item.kind === 'fandom') {
+      const f = await fandomStory(item.title, 30000);
+      if (f && f.text) return f.text;
+    }
+  } catch (e) { /* fall through to excerpt */ }
+  return item.text;
 }
 
 /* ---------------- categories ---------------- */
@@ -160,7 +173,7 @@ const CATEGORIES = [
         arr = [...arr].sort(() => Math.random() - 0.5);
       }
       return arr.slice(0, 24).map((s) => ({
-        title: s.t, text: `${s.t} ${s.b}`, url: null,
+        title: s.t, text: `${s.t} ${s.b}`, kind: 'bundled',
         src: 'Horror Seeds · GitHub', year: null, score: s.s,
       }));
     },
@@ -175,16 +188,16 @@ const CATEGORIES = [
         const q = query.toLowerCase();
         arr = arr.filter((c) => c.t.toLowerCase().includes(q)).slice(0, 24);
       }
-      return arr.map((c, i) => ({
+      return arr.map((c) => ({
         title: `Hindi Classic — Kahani ${String(c.n + 1).padStart(2, '0')}`,
-        text: c.t, url: null, src: 'Hindi Classics · Public Domain', year: null,
+        text: c.t, kind: 'bundled', src: 'Hindi Classics · Public Domain', year: null,
       }));
     },
   },
 ];
 
-/* ---------------- state + rendering ---------------- */
-const state = { cat: 'ghost', items: [], loading: false };
+/* ---------------- state + rendering (stories page) ---------------- */
+const state = { cat: 'ghost', catIcon: 'ghost', items: [], loading: false };
 
 function badgeHTML(it) {
   let h = `<span class="badge src">${esc(it.src)}</span>`;
@@ -207,7 +220,7 @@ function renderStories(items) {
       <h3>${esc(it.title)}</h3>
       <p class="excerpt">${esc(it.text.slice(0, 220))}…</p>
       <button class="read-btn" data-i="${i}">READ FULL STORY
-        <span class="ic" style="width:14px;height:14px">${ICONS.external}</span>
+        <span class="ic" style="width:14px;height:14px">${ICONS.book}</span>
       </button>
     </article>`).join('');
   grid.querySelectorAll('.read-btn').forEach((b) =>
@@ -221,7 +234,7 @@ async function loadCategory(catId, query) {
   state.cat = catId;
   state.catIcon = cat.icon;
   $('exploreSub').textContent = cat.sub;
-  document.querySelectorAll('.cat-card').forEach((el) =>
+  document.querySelectorAll('.cat-pill').forEach((el) =>
     el.classList.toggle('active', el.dataset.cat === catId));
   const st = $('status');
   st.className = 'status';
@@ -241,21 +254,31 @@ async function loadCategory(catId, query) {
   state.loading = false;
 }
 
-/* ---------------- modal ---------------- */
+/* ---------------- modal: fully in-app reader ---------------- */
 function openStory(it, dramatic) {
   $('modalTitle').textContent = it.title;
   $('modalBadges').innerHTML = badgeHTML(it);
-  $('modalBody').textContent = it.text;
-  const src = $('modalSource');
-  if (it.url) { src.href = it.url; src.style.display = ''; }
-  else { src.style.display = 'none'; }
+  $('modalSrcLine').textContent = 'Source: ' + it.src;
+  const body = $('modalBody');
   const ov = $('modalOverlay');
   ov.classList.add('open');
   const modal = ov.querySelector('.modal');
   modal.classList.remove('reveal-story');
   if (dramatic) { void modal.offsetWidth; modal.classList.add('reveal-story'); }
   document.body.style.overflow = 'hidden';
-  $('modalBody').scrollTop = 0;
+  body.scrollTop = 0;
+  if (it.kind === 'bundled' || it._full) {
+    body.textContent = it._full || it.text;
+  } else {
+    body.innerHTML = '<div class="loading-story"><span class="spin"></span>Summoning the full story…</div>';
+    fetchFullText(it).then((t) => {
+      it._full = t;
+      if (ov.classList.contains('open') && $('modalTitle').textContent === it.title) {
+        body.textContent = t;
+        body.scrollTop = 0;
+      }
+    });
+  }
 }
 function closeModal() {
   $('modalOverlay').classList.remove('open');
@@ -272,7 +295,7 @@ async function surprise() {
   if (state.cat !== cat.id) {
     state.cat = cat.id; state.catIcon = cat.icon; state.items = items;
     $('exploreSub').textContent = cat.sub;
-    document.querySelectorAll('.cat-card').forEach((el) =>
+    document.querySelectorAll('.cat-pill').forEach((el) =>
       el.classList.toggle('active', el.dataset.cat === cat.id));
     renderStories(items);
   }
@@ -280,26 +303,36 @@ async function surprise() {
   openStory(items[Math.floor(Math.random() * items.length)], true);
 }
 
-/* ---------------- category cards ---------------- */
+/* ---------------- category cards (home page) ---------------- */
 function buildCatCards() {
-  $('catGrid').innerHTML = CATEGORIES.map((c) => `
-    <div class="cat-card glass reveal ${c.id === 'ghost' ? 'active' : ''}" data-cat="${c.id}">
+  const grid = $('catGrid');
+  if (!grid) return;
+  grid.innerHTML = CATEGORIES.map((c) => `
+    <a class="cat-card glass reveal" data-cat="${c.id}" href="stories.html?cat=${c.id}">
       <div class="cat-ic">${ICONS[c.icon]}</div>
       <h3>${c.label}</h3>
       <p>${c.desc}</p>
       <span class="cat-count">${c.tag}</span>
-    </div>`).join('');
-  document.querySelectorAll('.cat-card').forEach((el) =>
-    el.addEventListener('click', () => {
-      loadCategory(el.dataset.cat);
-      $('explore').scrollIntoView({ behavior: 'smooth' });
-    }));
+    </a>`).join('');
+}
+
+/* ---------------- category pills (stories page) ---------------- */
+function buildCatPills() {
+  const bar = $('catPills');
+  if (!bar) return;
+  bar.innerHTML = CATEGORIES.map((c) => `
+    <button class="cat-pill ${c.id === state.cat ? 'active' : ''}" data-cat="${c.id}">
+      <span class="ic" style="width:15px;height:15px">${ICONS[c.icon]}</span>${c.label}
+    </button>`).join('');
+  bar.querySelectorAll('.cat-pill').forEach((el) =>
+    el.addEventListener('click', () => { $('searchInput').value = ''; loadCategory(el.dataset.cat); }));
 }
 
 /* ---------------- animations ---------------- */
-// ember particles
 function initEmbers() {
-  const cv = $('embers'), ctx = cv.getContext('2d');
+  const cv = $('embers');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
   let W, H, ps = [];
   function resize() {
     W = cv.width = innerWidth; H = cv.height = innerHeight;
@@ -331,15 +364,15 @@ function initEmbers() {
     requestAnimationFrame(tick);
   })(0);
 }
-// typing tagline
 function initTyper() {
+  const el = $('typer');
+  if (!el) return;
   const lines = [
     'Haunted places. Unsolved crimes. Dark web tales.',
     'Real stories — no login, no paywall.',
     '53 Hindi classics. 2,000 horror seeds.',
     'Built for storytellers of the dark.',
   ];
-  const el = $('typer');
   let li = 0, ci = 0, del = false;
   (function type() {
     const line = lines[li];
@@ -350,40 +383,62 @@ function initTyper() {
     else { del = false; li = (li + 1) % lines.length; setTimeout(type, 350); }
   })();
 }
-// scroll reveal
 function initReveal() {
   const io = new IntersectionObserver((es) =>
     es.forEach((e) => e.isIntersecting && e.target.classList.add('visible')),
     { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
 }
+function markActiveNav() {
+  document.querySelectorAll('[data-nav]').forEach((a) => {
+    if (a.dataset.nav === PAGE) a.classList.add('active');
+  });
+}
 
 /* ---------------- init ---------------- */
 document.addEventListener('DOMContentLoaded', () => {
   mountIcons();
-  $('logoIcon').innerHTML = ICONS.logo;
-  buildCatCards();
+  const logo = $('logoIcon');
+  if (logo) logo.innerHTML = ICONS.logo;
   initEmbers();
-  initTyper();
   initReveal();
+  markActiveNav();
 
-  $('surpriseBtn').addEventListener('click', surprise);
-  $('heroRandom').addEventListener('click', surprise);
-  $('navRandom').addEventListener('click', surprise);
-  $('modalClose').addEventListener('click', closeModal);
-  $('modalOverlay').addEventListener('click', (e) => {
-    if (e.target === $('modalOverlay')) closeModal();
-  });
-  $('modalNext').addEventListener('click', surprise);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
-  });
+  const goSurprise = () => { location.href = 'stories.html?surprise=1'; };
 
-  let deb;
-  $('searchInput').addEventListener('input', (e) => {
-    clearTimeout(deb);
-    deb = setTimeout(() => loadCategory(state.cat, e.target.value.trim() || undefined), 600);
-  });
+  if (PAGE === 'home') {
+    initTyper();
+    buildCatCards();
+    const hr = $('heroRandom'); if (hr) hr.addEventListener('click', goSurprise);
+    const nr = $('navRandom'); if (nr) nr.addEventListener('click', goSurprise);
+  }
 
-  loadCategory('ghost');
+  if (PAGE === 'stories') {
+    buildCatPills();
+    $('modalClose').addEventListener('click', closeModal);
+    $('modalOverlay').addEventListener('click', (e) => {
+      if (e.target === $('modalOverlay')) closeModal();
+    });
+    $('modalNext').addEventListener('click', surprise);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+    $('surpriseBtn').addEventListener('click', surprise);
+    const nr = $('navRandom'); if (nr) nr.addEventListener('click', surprise);
+    let deb;
+    $('searchInput').addEventListener('input', (e) => {
+      clearTimeout(deb);
+      deb = setTimeout(() => loadCategory(state.cat, e.target.value.trim() || undefined), 600);
+    });
+    const params = new URLSearchParams(location.search);
+    const cat = params.get('cat');
+    const startCat = CATEGORIES.some((c) => c.id === cat) ? cat : 'ghost';
+    loadCategory(startCat).then(() => {
+      if (params.get('surprise') === '1') surprise();
+    });
+  }
+
+  if (PAGE === 'about') {
+    const nr = $('navRandom'); if (nr) nr.addEventListener('click', goSurprise);
+  }
 });

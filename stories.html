@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stories — NECSTORY</title>
+<meta name="description" content="Browse the NECSTORY archive: ghost stories, crime cases, dark web tales, mysteries, horror seeds and Hindi classics. Every story opens right here.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="stories">
+
+<canvas id="embers"></canvas>
+<div class="orb orb-a"></div>
+<div class="orb orb-b"></div>
+<div class="orb orb-c"></div>
+
+<!-- ================= NAV ================= -->
+<header class="nav glass">
+  <a class="brand" href="index.html">
+    <span class="brand-mark" id="logoIcon"></span>
+    <span class="brand-name">NEC<em>STORY</em></span>
+  </a>
+  <nav class="nav-links">
+    <a href="index.html" data-nav="home">Home</a>
+    <a href="stories.html" data-nav="stories">Stories</a>
+    <a href="about.html" data-nav="about">About</a>
+  </nav>
+  <button class="btn btn-red btn-sm" id="navRandom">
+    <span class="ic" data-icon="random"></span> Surprise Me
+  </button>
+</header>
+
+<main>
+  <!-- ================= PAGE HERO ================= -->
+  <section class="page-hero">
+    <div class="eyebrow glass"><span class="pulse"></span> THE ARCHIVE</div>
+    <h1>Every Story, <span class="t-red">Right Here</span></h1>
+    <p>Tap any story — the full text opens inside NECSTORY. No redirects, no new tabs.</p>
+  </section>
+
+  <!-- ================= EXPLORE ================= -->
+  <section class="section" style="padding-top:26px">
+    <div class="cat-pills reveal" id="catPills"></div>
+    <div class="sec-head reveal" style="margin-bottom:22px">
+      <p id="exploreSub" style="margin-top:0">Haunted places of India &amp; the world — fetched live from Wikipedia.</p>
+    </div>
+    <div class="toolbar glass reveal">
+      <div class="search-wrap">
+        <span class="ic" data-icon="search"></span>
+        <input type="text" id="searchInput" placeholder="Search this realm… e.g. bhangarh, dahlia, cooper">
+      </div>
+      <button class="btn btn-red" id="surpriseBtn"><span class="ic" data-icon="random"></span> Surprise Me</button>
+    </div>
+    <div id="status" class="status"></div>
+    <div class="story-grid" id="storyGrid"></div>
+  </section>
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+  <div class="foot-brand">NEC<em>STORY</em></div>
+  <p class="foot-note">Real stories from haunted places, unsolved crimes, the dark web & classic horror — for storytellers & creators.</p>
+  <div class="socials">
+    <a class="soc" href="https://instagram.com/i_necxy" target="_blank" rel="noopener" aria-label="NECSTORY on Instagram"><span class="ic" data-icon="instagram"></span></a>
+    <a class="soc" href="https://t.me/i_necxy" target="_blank" rel="noopener" aria-label="NECSTORY on Telegram"><span class="ic" data-icon="telegram"></span></a>
+  </div>
+  <p class="soc-handle">@i_necxy</p>
+  <div class="dev-credit">NECXY <span>DEVELOPER</span></div>
+  <p class="foot-disc">Wikipedia text is CC-BY-SA · Creepypasta Wiki content is CC-BY-SA — credit the wiki &amp; author when reusing · Gutenberg books are public domain.</p>
+  <p class="foot-copy">© 2026 NECSTORY. All rights reserved.</p>
+</footer>
+
+<!-- ================= STORY MODAL (in-app reader) ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal glass-strong">
+    <button class="modal-close" id="modalClose"><span class="ic" data-icon="close"></span></button>
+    <div class="modal-badges" id="modalBadges"></div>
+    <h2 id="modalTitle"></h2>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <span class="modal-src" id="modalSrcLine"></span>
+      <button class="btn btn-ghost btn-sm" id="modalNext"><span class="ic" data-icon="random"></span> Another Random</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/data-seeds.js"></script>
+<script src="js/data-classics.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

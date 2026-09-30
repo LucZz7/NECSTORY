@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-page="home">
 
 <canvas id="embers"></canvas>
 <div class="orb orb-a"></div>
@@ -19,21 +19,21 @@
 
 <!-- ================= NAV ================= -->
 <header class="nav glass">
-  <a class="brand" href="#top">
+  <a class="brand" href="index.html">
     <span class="brand-mark" id="logoIcon"></span>
     <span class="brand-name">NEC<em>STORY</em></span>
   </a>
   <nav class="nav-links">
-    <a href="#categories">Categories</a>
-    <a href="#explore">Explore</a>
-    <a href="#sources">Sources</a>
+    <a href="index.html" data-nav="home">Home</a>
+    <a href="stories.html" data-nav="stories">Stories</a>
+    <a href="about.html" data-nav="about">About</a>
   </nav>
   <button class="btn btn-red btn-sm" id="navRandom">
     <span class="ic" data-icon="random"></span> Surprise Me
   </button>
 </header>
 
-<main id="top">
+<main>
   <!-- ================= HERO ================= -->
   <section class="hero">
     <div class="hero-inner">
@@ -41,11 +41,11 @@
       <h1 class="hero-title"><span class="t-red">REAL</span> STORIES<br>FROM THE <span class="t-red">DARK</span></h1>
       <p class="hero-sub"><span id="typer"></span><span class="caret"></span></p>
       <div class="hero-cta">
-        <a href="#explore" class="btn btn-red btn-lg"><span class="ic" data-icon="search"></span> Start Exploring</a>
+        <a href="stories.html" class="btn btn-red btn-lg"><span class="ic" data-icon="search"></span> Start Exploring</a>
         <button class="btn btn-ghost btn-lg" id="heroRandom"><span class="ic" data-icon="random"></span> Random Story</button>
       </div>
       <div class="stats glass">
-        <div class="stat"><b id="statSeeds">2,000+</b><span>Horror Seeds</span></div>
+        <div class="stat"><b>2,000+</b><span>Horror Seeds</span></div>
         <div class="stat"><b>53</b><span>Hindi Classics</span></div>
         <div class="stat"><b>4</b><span>Live Sources</span></div>
         <div class="stat"><b>100%</b><span>Free Forever</span></div>
@@ -58,26 +58,9 @@
   <section id="categories" class="section">
     <div class="sec-head reveal">
       <h2>Choose Your <span class="t-red">Darkness</span></h2>
-      <p>Six story realms. Every card below pulls live from real sources.</p>
+      <p>Six story realms. Tap a card to enter its archive — every story opens right here.</p>
     </div>
     <div class="cat-grid" id="catGrid"></div>
-  </section>
-
-  <!-- ================= EXPLORE ================= -->
-  <section id="explore" class="section">
-    <div class="sec-head reveal">
-      <h2>The <span class="t-red">Archive</span></h2>
-      <p id="exploreSub">Haunted places of India & the world — fetched live from Wikipedia.</p>
-    </div>
-    <div class="toolbar glass reveal">
-      <div class="search-wrap">
-        <span class="ic" data-icon="search"></span>
-        <input type="text" id="searchInput" placeholder="Search this realm… e.g. bhangarh, dahlia, cooper">
-      </div>
-      <button class="btn btn-red" id="surpriseBtn"><span class="ic" data-icon="random"></span> Surprise Me</button>
-    </div>
-    <div id="status" class="status"></div>
-    <div class="story-grid" id="storyGrid"></div>
   </section>
 
   <!-- ================= SOURCES ================= -->
@@ -119,24 +102,15 @@
 <footer class="footer">
   <div class="foot-brand">NEC<em>STORY</em></div>
   <p class="foot-note">Real stories from haunted places, unsolved crimes, the dark web & classic horror — for storytellers & creators.</p>
-  <p class="foot-disc">Creepypasta Wiki content is CC-BY-SA — credit the wiki & author when reusing. Wikipedia text is CC-BY-SA. Gutenberg books are public domain.</p>
-  <div class="dev-blur">NECXY DEVELOPER</div>
+  <div class="socials">
+    <a class="soc" href="https://instagram.com/i_necxy" target="_blank" rel="noopener" aria-label="NECSTORY on Instagram"><span class="ic" data-icon="instagram"></span></a>
+    <a class="soc" href="https://t.me/i_necxy" target="_blank" rel="noopener" aria-label="NECSTORY on Telegram"><span class="ic" data-icon="telegram"></span></a>
+  </div>
+  <p class="soc-handle">@i_necxy</p>
+  <div class="dev-credit">NECXY <span>DEVELOPER</span></div>
+  <p class="foot-disc">Wikipedia text is CC-BY-SA · Creepypasta Wiki content is CC-BY-SA — credit the wiki &amp; author when reusing · Gutenberg books are public domain.</p>
   <p class="foot-copy">© 2026 NECSTORY. All rights reserved.</p>
 </footer>
-
-<!-- ================= STORY MODAL ================= -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal glass-strong">
-    <button class="modal-close" id="modalClose"><span class="ic" data-icon="close"></span></button>
-    <div class="modal-badges" id="modalBadges"></div>
-    <h2 id="modalTitle"></h2>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-actions">
-      <a href="#" target="_blank" rel="noopener" class="btn btn-red btn-sm" id="modalSource"><span class="ic" data-icon="external"></span> Open Source</a>
-      <button class="btn btn-ghost btn-sm" id="modalNext"><span class="ic" data-icon="random"></span> Another Random</button>
-    </div>
-  </div>
-</div>
 
 <script src="js/config.js"></script>
 <script src="js/icons.js"></script>
